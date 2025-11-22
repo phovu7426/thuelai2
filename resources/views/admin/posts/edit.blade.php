@@ -192,85 +192,123 @@
         var dialogName = dialog.getName();
         
         if (dialogName == 'image2' || dialogName == 'image') {
-          // Đợi một chút để dialog render xong
-          setTimeout(function() {
-            // Tìm input file trong dialog
-            var dialogElement = dialog.getElement();
-            var fileInputs = dialogElement.$.querySelectorAll('input[type="file"]');
-            
-            fileInputs.forEach(function(fileInput) {
-              // Remove existing listeners để tránh duplicate
-              var newFileInput = fileInput.cloneNode(true);
-              fileInput.parentNode.replaceChild(newFileInput, fileInput);
+          // Hàm để attach event listener
+          function attachFileListener() {
+            try {
+              // Tìm input file trong dialog - thử nhiều cách
+              var dialogElement = dialog.getElement();
+              var dialogDom = dialogElement ? dialogElement.$ : null;
               
-              // Attach event listener mới
-              newFileInput.addEventListener('change', function(e) {
-                var file = e.target.files && e.target.files[0];
-                if (file) {
-                  // Hiển thị thông báo đang upload
-                  var uploadMsg = 'Đang tải lên ảnh: ' + (file.name || 'ảnh từ camera') + '...';
-                  alert(uploadMsg);
-                  
-                  var formData = new FormData();
-                  formData.append('upload', file);
-                  formData.append('_token', '{{ csrf_token() }}');
-                  
-                  var xhr = new XMLHttpRequest();
-                  xhr.open('POST', '{{ url('/upload') }}', true);
-                  
-                  xhr.onload = function() {
-                    if (xhr.status === 200) {
-                      try {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response.url) {
-                          var currentDialog = CKEDITOR.dialog.getCurrent();
-                          if (currentDialog) {
-                            var srcField = currentDialog.getContentElement('info', 'src') || 
-                                         currentDialog.getContentElement('info', 'txtUrl');
-                            if (srcField) {
-                              srcField.setValue(response.url);
-                              currentDialog.selectPage('info');
-                              alert('Tải lên thành công! Ảnh đã được chèn vào editor.');
-                            } else {
-                              alert('Tải lên thành công nhưng không tìm thấy field để chèn ảnh.');
+              // Nếu không tìm thấy, thử tìm trong document
+              if (!dialogDom) {
+                var dialogIframe = dialog.getElement().getFrameDocument();
+                if (dialogIframe) {
+                  dialogDom = dialogIframe.$;
+                }
+              }
+              
+              // Nếu vẫn không có, tìm trong body
+              if (!dialogDom) {
+                dialogDom = document.body;
+              }
+              
+              var fileInputs = dialogDom.querySelectorAll('input[type="file"]');
+              
+              if (fileInputs.length === 0) {
+                // Thử tìm trong iframe của dialog
+                var iframes = document.querySelectorAll('iframe');
+                for (var i = 0; i < iframes.length; i++) {
+                  try {
+                    var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+                    fileInputs = iframeDoc.querySelectorAll('input[type="file"]');
+                    if (fileInputs.length > 0) {
+                      dialogDom = iframeDoc;
+                      break;
+                    }
+                  } catch (e) {
+                    // Cross-origin, bỏ qua
+                  }
+                }
+              }
+              
+              if (fileInputs.length > 0) {
+                fileInputs.forEach(function(fileInput) {
+                  // Kiểm tra xem đã có listener chưa
+                  if (!fileInput.hasAttribute('data-upload-listener')) {
+                    fileInput.setAttribute('data-upload-listener', 'true');
+                    
+                    fileInput.addEventListener('change', function(e) {
+                      var file = e.target.files && e.target.files[0];
+                      if (file) {
+                        // Hiển thị thông báo đang upload
+                        var uploadMsg = 'Đang tải lên ảnh: ' + (file.name || 'ảnh từ camera') + '...';
+                        alert(uploadMsg);
+                        
+                        var formData = new FormData();
+                        formData.append('upload', file);
+                        formData.append('_token', '{{ csrf_token() }}');
+                        
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', '{{ url('/upload') }}', true);
+                        
+                        xhr.onload = function() {
+                          if (xhr.status === 200) {
+                            try {
+                              var response = JSON.parse(xhr.responseText);
+                              if (response.url) {
+                                var currentDialog = CKEDITOR.dialog.getCurrent();
+                                if (currentDialog) {
+                                  var srcField = currentDialog.getContentElement('info', 'src') || 
+                                               currentDialog.getContentElement('info', 'txtUrl');
+                                  if (srcField) {
+                                    srcField.setValue(response.url);
+                                    currentDialog.selectPage('info');
+                                    alert('Tải lên thành công! Ảnh đã được chèn vào editor.');
+                                  } else {
+                                    alert('Tải lên thành công nhưng không tìm thấy field để chèn ảnh.');
+                                  }
+                                } else {
+                                  alert('Tải lên thành công nhưng không tìm thấy dialog.');
+                                }
+                              } else {
+                                alert('Tải lên thành công nhưng không có URL ảnh. Vui lòng thử lại.');
+                              }
+                            } catch (e) {
+                              alert('Lỗi khi xử lý phản hồi từ server. Vui lòng thử lại.');
                             }
                           } else {
-                            alert('Tải lên thành công nhưng không tìm thấy dialog.');
+                            try {
+                              var errorResponse = JSON.parse(xhr.responseText);
+                              var errorMsg = errorResponse.message || errorResponse.error?.message || 'Lỗi không xác định';
+                              alert('Lỗi khi tải lên ảnh: ' + errorMsg);
+                            } catch (e) {
+                              alert('Lỗi khi tải lên ảnh (Mã lỗi: ' + xhr.status + '). Vui lòng thử lại.');
+                            }
                           }
-                        } else {
-                          alert('Tải lên thành công nhưng không có URL ảnh. Vui lòng thử lại.');
-                        }
-                      } catch (e) {
-                        alert('Lỗi khi xử lý phản hồi từ server. Vui lòng thử lại.');
+                        };
+                        
+                        xhr.onerror = function() {
+                          alert('Lỗi kết nối khi tải lên ảnh. Vui lòng kiểm tra kết nối mạng và thử lại.');
+                        };
+                        
+                        xhr.send(formData);
                       }
-                    } else {
-                      try {
-                        var errorResponse = JSON.parse(xhr.responseText);
-                        var errorMsg = errorResponse.message || errorResponse.error?.message || 'Lỗi không xác định';
-                        alert('Lỗi khi tải lên ảnh: ' + errorMsg);
-                      } catch (e) {
-                        alert('Lỗi khi tải lên ảnh (Mã lỗi: ' + xhr.status + '). Vui lòng thử lại.');
-                      }
-                    }
-                  };
-                  
-                  xhr.onerror = function() {
-                    alert('Lỗi kết nối khi tải lên ảnh. Vui lòng kiểm tra kết nối mạng và thử lại.');
-                  };
-                  
-                  xhr.upload.onprogress = function(e) {
-                    // Có thể hiển thị progress nếu cần
-                    if (e.lengthComputable) {
-                      var percentComplete = (e.loaded / e.total) * 100;
-                      // Progress được xử lý ở đây nếu cần UI
-                    }
-                  };
-                  
-                  xhr.send(formData);
-                }
-              }, false);
-            });
-          }, 300);
+                    }, false);
+                  }
+                });
+              } else {
+                // Nếu chưa tìm thấy, thử lại sau
+                setTimeout(attachFileListener, 200);
+              }
+            } catch (e) {
+              alert('Lỗi khi xử lý upload: ' + e.message);
+            }
+          }
+          
+          // Thử attach ngay và sau đó thử lại
+          setTimeout(attachFileListener, 100);
+          setTimeout(attachFileListener, 500);
+          setTimeout(attachFileListener, 1000);
         }
       });
 

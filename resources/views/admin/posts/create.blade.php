@@ -181,19 +181,52 @@
         var dialogName = dialog.getName();
         
         if (dialogName == 'image2' || dialogName == 'image') {
-          // Đợi một chút để dialog render xong
-          setTimeout(function() {
-            // Tìm input file trong dialog
-            var dialogElement = dialog.getElement();
-            var fileInputs = dialogElement.$.querySelectorAll('input[type="file"]');
-            
-            fileInputs.forEach(function(fileInput) {
-              // Remove existing listeners để tránh duplicate
-              var newFileInput = fileInput.cloneNode(true);
-              fileInput.parentNode.replaceChild(newFileInput, fileInput);
+          // Hàm để attach event listener
+          function attachFileListener() {
+            try {
+              // Tìm input file trong dialog - thử nhiều cách
+              var dialogElement = dialog.getElement();
+              var dialogDom = dialogElement ? dialogElement.$ : null;
               
-              // Attach event listener mới
-              newFileInput.addEventListener('change', function(e) {
+              // Nếu không tìm thấy, thử tìm trong document
+              if (!dialogDom) {
+                var dialogIframe = dialog.getElement().getFrameDocument();
+                if (dialogIframe) {
+                  dialogDom = dialogIframe.$;
+                }
+              }
+              
+              // Nếu vẫn không có, tìm trong body
+              if (!dialogDom) {
+                dialogDom = document.body;
+              }
+              
+              var fileInputs = dialogDom.querySelectorAll('input[type="file"]');
+              
+              if (fileInputs.length === 0) {
+                // Thử tìm trong iframe của dialog
+                var iframes = document.querySelectorAll('iframe');
+                for (var i = 0; i < iframes.length; i++) {
+                  try {
+                    var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+                    fileInputs = iframeDoc.querySelectorAll('input[type="file"]');
+                    if (fileInputs.length > 0) {
+                      dialogDom = iframeDoc;
+                      break;
+                    }
+                  } catch (e) {
+                    // Cross-origin, bỏ qua
+                  }
+                }
+              }
+              
+              if (fileInputs.length > 0) {
+                fileInputs.forEach(function(fileInput) {
+                  // Kiểm tra xem đã có listener chưa
+                  if (!fileInput.hasAttribute('data-upload-listener')) {
+                    fileInput.setAttribute('data-upload-listener', 'true');
+                    
+                    fileInput.addEventListener('change', function(e) {
                 var file = e.target.files && e.target.files[0];
                 if (file) {
                   // Hiển thị thông báo đang upload
@@ -258,8 +291,21 @@
                   xhr.send(formData);
                 }
               }, false);
-            });
-          }, 300);
+                  }
+                });
+              } else {
+                // Nếu chưa tìm thấy, thử lại sau
+                setTimeout(attachFileListener, 200);
+              }
+            } catch (e) {
+              alert('Lỗi khi xử lý upload: ' + e.message);
+            }
+          }
+          
+          // Thử attach ngay và sau đó thử lại
+          setTimeout(attachFileListener, 100);
+          setTimeout(attachFileListener, 500);
+          setTimeout(attachFileListener, 1000);
         }
       });
 

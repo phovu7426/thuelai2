@@ -225,17 +225,19 @@ class UploadController extends Controller
      */
     public function uploadImage(Request $request): JsonResponse
     {
+        // Log ngay từ đầu để đảm bảo request đến được server
+        Log::info('CKEditor uploadImage request received', [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'has_file' => $request->hasFile('upload'),
+            'has_token' => $request->has('_token'),
+            'has_cktoken' => $request->has('ckCsrfToken'),
+            'all_files' => array_keys($request->allFiles()),
+            'content_type' => $request->header('Content-Type'),
+            'user_agent' => $request->header('User-Agent'),
+        ]);
+        
         try {
-            // Debug: Log request để kiểm tra
-            Log::info('CKEditor upload request', [
-                'url' => $request->fullUrl(),
-                'method' => $request->method(),
-                'has_file' => $request->hasFile('upload'),
-                'has_token' => $request->has('_token'),
-                'has_cktoken' => $request->has('ckCsrfToken'),
-                'token_value' => $request->input('_token') ?: $request->input('ckCsrfToken'),
-                'headers' => $request->headers->all(),
-            ]);
             
             // Nếu có ckCsrfToken nhưng không có _token, thêm _token từ ckCsrfToken
             if ($request->has('ckCsrfToken') && !$request->has('_token')) {
@@ -253,6 +255,9 @@ class UploadController extends Controller
             }
 
             if (!$request->hasFile('upload')) {
+                Log::warning('CKEditor upload: No file uploaded', [
+                    'all_files' => array_keys($request->allFiles()),
+                ]);
                 return response()->json([
                     'uploaded' => 0,
                     'error' => [
@@ -262,11 +267,43 @@ class UploadController extends Controller
             }
 
             $file = $request->file('upload');
+            
+            Log::info('CKEditor file object', [
+                'file_exists' => $file !== null,
+                'is_valid' => $file ? $file->isValid() : false,
+                'original_name' => $file ? $file->getClientOriginalName() : null,
+                'size' => $file ? $file->getSize() : null,
+                'mime_type' => $file ? $file->getMimeType() : null,
+            ]);
+            
+            if (!$file || !$file->isValid()) {
+                Log::warning('CKEditor upload: Invalid file', [
+                    'file_exists' => $file !== null,
+                    'is_valid' => $file ? $file->isValid() : false,
+                ]);
+                return response()->json([
+                    'uploaded' => 0,
+                    'error' => [
+                        'message' => 'File không hợp lệ hoặc bị lỗi khi upload!'
+                    ]
+                ], 400);
+            }
 
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
             $mimeType = $file->getMimeType();
+            
+            // Nếu không có MIME type, thử lấy từ client
+            if (empty($mimeType)) {
+                $clientMime = $file->getClientMimeType();
+                $mimeType = $clientMime ?: 'image/jpeg'; // Mặc định là jpeg
+            }
+            
             if (!in_array($mimeType, $allowedTypes)) {
-                Log::warning('CKEditor upload: Invalid MIME type', ['mime' => $mimeType]);
+                Log::warning('CKEditor upload: Invalid MIME type', [
+                    'mime' => $mimeType,
+                    'filename' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                ]);
                 return response()->json([
                     'uploaded' => 0,
                     'error' => [
@@ -314,8 +351,23 @@ class UploadController extends Controller
                 }
             }
             
+            // Đảm bảo extension hợp lệ
+            if (empty($ext) || !in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                $ext = 'jpg';
+            }
+            
             $filename = time() . '_' . $safeName;
             $folder = 'uploads/' . date('Ymd');
+            
+            // Log thông tin file trước khi upload
+            Log::info('CKEditor processing upload', [
+                'original_name' => $originalName,
+                'safe_name' => $safeName,
+                'extension' => $ext,
+                'mime_type' => $mimeType,
+                'final_filename' => $filename,
+                'size' => $file->getSize(),
+            ]);
             
             // Đảm bảo thư mục tồn tại
             if (!Storage::disk('public')->exists($folder)) {
@@ -325,6 +377,10 @@ class UploadController extends Controller
             $path = $file->storeAs($folder, $filename, 'public');
             
             if (!$path) {
+                Log::error('CKEditor upload: Cannot save file', [
+                    'folder' => $folder,
+                    'filename' => $filename,
+                ]);
                 throw new \Exception('Không thể lưu file vào storage');
             }
             
@@ -334,6 +390,7 @@ class UploadController extends Controller
                 'filename' => $filename,
                 'path' => $path,
                 'url' => $url,
+                'mime' => $mimeType,
             ]);
 
             // Trả về format đúng theo chuẩn CKEditor
@@ -343,16 +400,31 @@ class UploadController extends Controller
                 'url' => $url,
             ]);
         } catch (\Throwable $e) {
+            $errorMessage = $e->getMessage();
+            $fileName = $request->file('upload')?->getClientOriginalName() ?? 'unknown';
+            
             Log::error('CKEditor upload error', [
-                'message' => $e->getMessage(),
+                'message' => $errorMessage,
+                'file_name' => $fileName,
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            // Message phải ngắn gọn và rõ ràng
+            $userMessage = 'Không thể tải lên file';
+            if (strpos($errorMessage, 'image') !== false || strpos($errorMessage, 'jpg') !== false) {
+                $userMessage = 'Lỗi khi xử lý ảnh. Vui lòng thử lại với ảnh khác.';
+            } elseif (strpos($errorMessage, 'storage') !== false || strpos($errorMessage, 'permission') !== false) {
+                $userMessage = 'Lỗi hệ thống khi lưu file. Vui lòng liên hệ quản trị viên.';
+            } elseif (strpos($errorMessage, 'size') !== false) {
+                $userMessage = 'File quá lớn. Vui lòng chọn file nhỏ hơn 5MB.';
+            }
             
             return response()->json([
                 'uploaded' => 0,
                 'error' => [
-                    'message' => 'Không thể tải lên file: ' . $e->getMessage()
-                ]
+                    'message' => $userMessage
+                ],
+                'message' => $userMessage,
             ], 500);
         }
     }

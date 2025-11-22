@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class UploadController extends Controller
@@ -61,6 +62,21 @@ class UploadController extends Controller
 
             $originalBase = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             $ext = strtolower($file->getClientOriginalExtension());
+            
+            // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
+            // lấy extension từ MIME type
+            if (empty($ext)) {
+                $mimeType = $file->getMimeType();
+                $mimeToExt = [
+                    'image/jpeg' => 'jpg',
+                    'image/jpg' => 'jpg',
+                    'image/png' => 'png',
+                    'image/gif' => 'gif',
+                    'image/webp' => 'webp',
+                ];
+                $ext = $mimeToExt[$mimeType] ?? 'jpg'; // Mặc định là jpg nếu không xác định được
+            }
+            
             // Loại bỏ ký tự đặc biệt để tránh 403/URL lỗi
             $base = preg_replace('/[^A-Za-z0-9\-_]+/', '_', $originalBase);
             $base = trim($base, '_');
@@ -100,7 +116,7 @@ class UploadController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         // Debug: Log request để kiểm tra
-        \Log::info('CKEditor upload request', [
+        Log::info('CKEditor upload request', [
             'url' => $request->fullUrl(),
             'method' => $request->method(),
             'has_file' => $request->hasFile('upload'),
@@ -159,6 +175,28 @@ class UploadController extends Controller
 
         $originalName = $file->getClientOriginalName();
         $safeName = preg_replace('/\s+/', '_', $originalName);
+        
+        // Kiểm tra xem file có extension không
+        $ext = strtolower($file->getClientOriginalExtension());
+        if (empty($ext)) {
+            // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
+            // lấy extension từ MIME type
+            $mimeType = $file->getMimeType();
+            $mimeToExt = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+            ];
+            $ext = $mimeToExt[$mimeType] ?? 'jpg'; // Mặc định là jpg nếu không xác định được
+            
+            // Nếu tên file không có extension, thêm vào
+            if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $safeName)) {
+                $safeName = pathinfo($safeName, PATHINFO_FILENAME) . '.' . $ext;
+            }
+        }
+        
         $filename = time() . '_' . $safeName;
         $folder = 'uploads/' . date('Ymd');
         $path = $file->storeAs($folder, $filename, 'public');

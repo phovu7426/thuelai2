@@ -113,9 +113,21 @@ class UploadController extends Controller
             $originalBase = pathinfo($originalName, PATHINFO_FILENAME);
             $ext = strtolower($file->getClientOriginalExtension());
             
-            // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
+            // Xử lý đặc biệt cho file từ camera
+            // File từ camera thường có tên như "image.jpg" nhưng extension có thể không đúng
+            $isCameraFile = (
+                $originalName === 'image.jpg' || 
+                $originalName === 'image.jpeg' || 
+                $originalName === 'image.png' ||
+                $originalBase === 'image' ||
+                $originalBase === 'blob' ||
+                empty($originalBase) ||
+                strpos($originalName, 'blob') !== false
+            );
+            
+            // Nếu không có extension hoặc là file từ camera,
             // lấy extension từ MIME type
-            if (empty($ext)) {
+            if (empty($ext) || $isCameraFile) {
                 $mimeToExt = [
                     'image/jpeg' => 'jpg',
                     'image/jpg' => 'jpg',
@@ -124,6 +136,14 @@ class UploadController extends Controller
                     'image/webp' => 'webp',
                 ];
                 $ext = $mimeToExt[$mimeType] ?? 'jpg'; // Mặc định là jpg nếu không xác định được
+                
+                Log::info('Camera file detected or no extension', [
+                    'original_name' => $originalName,
+                    'original_base' => $originalBase,
+                    'detected_ext' => $ext,
+                    'mime_type' => $mimeType,
+                    'is_camera_file' => $isCameraFile,
+                ]);
             }
             
             // Loại bỏ ký tự đặc biệt để tránh 403/URL lỗi
@@ -326,11 +346,23 @@ class UploadController extends Controller
 
             $originalName = $file->getClientOriginalName();
             $safeName = preg_replace('/\s+/', '_', $originalName);
+            $originalBase = pathinfo($originalName, PATHINFO_FILENAME);
+            
+            // Xử lý đặc biệt cho file từ camera
+            $isCameraFile = (
+                $originalName === 'image.jpg' || 
+                $originalName === 'image.jpeg' || 
+                $originalName === 'image.png' ||
+                $originalBase === 'image' ||
+                $originalBase === 'blob' ||
+                empty($originalBase) ||
+                strpos($originalName, 'blob') !== false
+            );
             
             // Kiểm tra xem file có extension không
             $ext = strtolower($file->getClientOriginalExtension());
-            if (empty($ext)) {
-                // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
+            if (empty($ext) || $isCameraFile) {
+                // Nếu không có extension hoặc là file từ camera,
                 // lấy extension từ MIME type
                 $mimeToExt = [
                     'image/jpeg' => 'jpg',
@@ -341,8 +373,16 @@ class UploadController extends Controller
                 ];
                 $ext = $mimeToExt[$mimeType] ?? 'jpg'; // Mặc định là jpg nếu không xác định được
                 
-                // Nếu tên file không có extension, thêm vào
-                if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $safeName)) {
+                Log::info('CKEditor: Camera file detected or no extension', [
+                    'original_name' => $originalName,
+                    'original_base' => $originalBase,
+                    'detected_ext' => $ext,
+                    'mime_type' => $mimeType,
+                    'is_camera_file' => $isCameraFile,
+                ]);
+                
+                // Nếu tên file không có extension hoặc là file từ camera, tạo lại tên
+                if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $safeName) || $isCameraFile) {
                     $baseName = pathinfo($safeName, PATHINFO_FILENAME);
                     if (empty($baseName) || $baseName === 'blob' || $baseName === 'image') {
                         $baseName = 'image';

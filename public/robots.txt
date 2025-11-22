@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://laixeho.net.vn/sitemap.xml
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /_setup
+Disallow: /_log
+Disallow: /test/
+Disallow: /debug-*
+
+# Allow important pages
+Allow: /
+Allow: /gioi-thieu
+Allow: /dich-vu
+Allow: /bang-gia
+Allow: /tin-tuc
+Allow: /lien-he
+Allow: /booking
+Allow: /posts
+Allow: /review/
+
+# Crawl delay (optional)
+Crawl-delay: 1

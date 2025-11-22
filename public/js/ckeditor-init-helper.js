@@ -23,6 +23,7 @@ function initCKEditor(elementId, options) {
         removePlugins: 'easyimage,cloudservices',
         extraPlugins: 'uploadimage',
         uploadUrl: uploadUrl, // URL để upload ảnh (bao gồm cả chụp từ camera)
+        filebrowserImageUploadUrl: uploadUrl, // URL cho upload ảnh trong dialog
         image2_altRequired: false,
         fileTools_requestHeaders: {
             'X-CSRF-TOKEN': token
@@ -34,7 +35,7 @@ function initCKEditor(elementId, options) {
     // Khởi tạo editor
     var editor = CKEDITOR.replace(elementId, config);
     
-    // Sửa validation cho dialog image
+    // Sửa validation cho dialog image và xử lý upload
     editor.on('dialogDefinition', function(evt) {
         var dialogName = evt.data.name;
         var dialogDefinition = evt.data.definition;
@@ -51,6 +52,71 @@ function initCKEditor(elementId, options) {
                     return true;
                 };
                 urlField.required = false;
+            }
+            
+            // Xử lý tab Upload - khi chụp ảnh từ camera
+            var uploadTab = dialogDefinition.getContents('Upload');
+            if (uploadTab) {
+                var uploadField = uploadTab.get('upload');
+                if (uploadField) {
+                    var originalOnChange = uploadField.onChange;
+                    uploadField.onChange = function() {
+                        if (originalOnChange) {
+                            originalOnChange.call(this);
+                        }
+                        
+                        var fileInput = this.getInputElement().$;
+                        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                            var file = fileInput.files[0];
+                            console.log('File selected for upload:', file.name, file.type);
+                            
+                            var formData = new FormData();
+                            formData.append('upload', file);
+                            formData.append('_token', token);
+                            
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('POST', uploadUrl.split('?')[0], true);
+                            
+                            xhr.onload = function() {
+                                if (xhr.status === 200) {
+                                    try {
+                                        var response = JSON.parse(xhr.responseText);
+                                        console.log('Upload response:', response);
+                                        if (response.url) {
+                                            var currentDialog = CKEDITOR.dialog.getCurrent();
+                                            if (currentDialog) {
+                                                var srcField = currentDialog.getContentElement('info', 'src') || 
+                                                             currentDialog.getContentElement('info', 'txtUrl');
+                                                if (srcField) {
+                                                    srcField.setValue(response.url);
+                                                    currentDialog.selectPage('info');
+                                                }
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing response:', e);
+                                        alert('Lỗi khi upload ảnh: ' + e.message);
+                                    }
+                                } else {
+                                    console.error('Upload failed:', xhr.status, xhr.responseText);
+                                    try {
+                                        var errorResponse = JSON.parse(xhr.responseText);
+                                        alert('Lỗi khi upload ảnh: ' + (errorResponse.message || errorResponse.error?.message || 'Vui lòng thử lại.'));
+                                    } catch (e) {
+                                        alert('Lỗi khi upload ảnh. Vui lòng thử lại.');
+                                    }
+                                }
+                            };
+                            
+                            xhr.onerror = function() {
+                                console.error('Upload error');
+                                alert('Lỗi kết nối khi upload ảnh.');
+                            };
+                            
+                            xhr.send(formData);
+                        }
+                    };
+                }
             }
         }
     });

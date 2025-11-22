@@ -192,6 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 extraPlugins: 'image2,uploadimage', // Bật plugin ảnh
                 removePlugins: 'easyimage, cloudservices',
                 uploadUrl: uploadUrl, // URL để upload ảnh (bao gồm cả chụp từ camera)
+                filebrowserImageUploadUrl: uploadUrl, // URL cho upload ảnh trong dialog
                 fileTools_requestHeaders: {
                     'X-CSRF-TOKEN': token
                 },
@@ -205,6 +206,78 @@ document.addEventListener("DOMContentLoaded", function () {
                     { name: 'colors', items: ['TextColor', 'BGColor'] },
                     { name: 'tools', items: ['Maximize'] }
                 ],
+            });
+            
+            // Xử lý upload trong dialog image (bao gồm chụp từ camera)
+            editor.on('dialogDefinition', function(evt) {
+                var dialogName = evt.data.name;
+                var dialogDefinition = evt.data.definition;
+                
+                if (dialogName === 'image' || dialogName === 'image2') {
+                    var uploadTab = dialogDefinition.getContents('Upload');
+                    if (uploadTab) {
+                        var uploadField = uploadTab.get('upload');
+                        if (uploadField) {
+                            var originalOnChange = uploadField.onChange;
+                            uploadField.onChange = function() {
+                                if (originalOnChange) {
+                                    originalOnChange.call(this);
+                                }
+                                
+                                var fileInput = this.getInputElement().$;
+                                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                                    var file = fileInput.files[0];
+                                    console.log('File selected for upload:', file.name, file.type);
+                                    
+                                    var formData = new FormData();
+                                    formData.append('upload', file);
+                                    formData.append('_token', token);
+                                    
+                                    var xhr = new XMLHttpRequest();
+                                    xhr.open('POST', uploadUrl.split('?')[0], true);
+                                    
+                                    xhr.onload = function() {
+                                        if (xhr.status === 200) {
+                                            try {
+                                                var response = JSON.parse(xhr.responseText);
+                                                console.log('Upload response:', response);
+                                                if (response.url) {
+                                                    var currentDialog = CKEDITOR.dialog.getCurrent();
+                                                    if (currentDialog) {
+                                                        var srcField = currentDialog.getContentElement('info', 'src') || 
+                                                                     currentDialog.getContentElement('info', 'txtUrl');
+                                                        if (srcField) {
+                                                            srcField.setValue(response.url);
+                                                            currentDialog.selectPage('info');
+                                                        }
+                                                    }
+                                                }
+                                            } catch (e) {
+                                                console.error('Error parsing response:', e);
+                                                alert('Lỗi khi upload ảnh: ' + e.message);
+                                            }
+                                        } else {
+                                            console.error('Upload failed:', xhr.status, xhr.responseText);
+                                            try {
+                                                var errorResponse = JSON.parse(xhr.responseText);
+                                                alert('Lỗi khi upload ảnh: ' + (errorResponse.message || errorResponse.error?.message || 'Vui lòng thử lại.'));
+                                            } catch (e) {
+                                                alert('Lỗi khi upload ảnh. Vui lòng thử lại.');
+                                            }
+                                        }
+                                    };
+                                    
+                                    xhr.onerror = function() {
+                                        console.error('Upload error');
+                                        alert('Lỗi kết nối khi upload ảnh.');
+                                    };
+                                    
+                                    xhr.send(formData);
+                                }
+                            };
+                        }
+                    }
+                }
             });
             
             // Đảm bảo gửi CSRF token khi upload (bao gồm chụp từ camera)

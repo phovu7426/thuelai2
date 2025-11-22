@@ -180,14 +180,20 @@ function handleFormSubmit(event) {
 
 // Kích hoạt CKEditor cho các input có data-editor="true"
 document.addEventListener("DOMContentLoaded", function () {
+    // Lấy CSRF token
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    var token = csrfToken ? csrfToken.getAttribute('content') : '';
+    var uploadUrl = '/upload?_token=' + token;
+    
     // Khởi tạo CKEditor cho tất cả textarea có data-editor="true"
     document.querySelectorAll('[data-editor="true"]').forEach((textarea) => {
         if (typeof CKEDITOR !== "undefined") {
-            CKEDITOR.replace(textarea.name, {
+            var editor = CKEDITOR.replace(textarea.name, {
                 extraPlugins: 'image2,uploadimage', // Bật plugin ảnh
                 removePlugins: 'easyimage, cloudservices',
+                uploadUrl: uploadUrl, // URL để upload ảnh (bao gồm cả chụp từ camera)
                 fileTools_requestHeaders: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'X-CSRF-TOKEN': token
                 },
                 toolbar: [
                     { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'Undo', 'Redo'] },
@@ -199,7 +205,35 @@ document.addEventListener("DOMContentLoaded", function () {
                     { name: 'colors', items: ['TextColor', 'BGColor'] },
                     { name: 'tools', items: ['Maximize'] }
                 ],
-                imageUploadUrl: '', // Không cần API
+            });
+            
+            // Đảm bảo gửi CSRF token khi upload (bao gồm chụp từ camera)
+            editor.on('fileUploadRequest', function(evt) {
+                var fileLoader = evt.data.fileLoader;
+                var formData = new FormData();
+                formData.append('upload', fileLoader.file);
+                formData.append('_token', token);
+                fileLoader.xhr.open('POST', uploadUrl.split('?')[0], true);
+                fileLoader.xhr.send(formData);
+                evt.stop();
+            });
+            
+            // Parse response và gán URL để CKEditor chèn ảnh
+            editor.on('fileUploadResponse', function(evt) {
+                var data = evt.data;
+                try {
+                    var json = JSON.parse(data.fileLoader.xhr.responseText || '{}');
+                    if (json && json.url) {
+                        data.url = json.url;
+                    } else if (json && json.uploaded && json.fileName && json.url) {
+                        data.url = json.url;
+                    } else if (json && json.success && json.url) {
+                        data.url = json.url;
+                    }
+                } catch (e) {
+                    console.error('Error parsing upload response:', e);
+                }
+                evt.stop();
             });
         } else {
             console.error("CKEDITOR is not loaded!");

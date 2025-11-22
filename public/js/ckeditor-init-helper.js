@@ -12,12 +12,21 @@ function initCKEditor(elementId, options) {
         }
     }
     
+    // Lấy CSRF token và upload URL
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    var token = csrfToken ? csrfToken.getAttribute('content') : '';
+    var uploadUrl = '/upload?_token=' + token;
+    
     // Merge options với defaults
     var defaultOptions = {
         language: 'vi',
         removePlugins: 'easyimage,cloudservices',
         extraPlugins: 'uploadimage',
-        image2_altRequired: false
+        uploadUrl: uploadUrl, // URL để upload ảnh (bao gồm cả chụp từ camera)
+        image2_altRequired: false,
+        fileTools_requestHeaders: {
+            'X-CSRF-TOKEN': token
+        }
     };
     
     var config = Object.assign({}, defaultOptions, options || {});
@@ -44,6 +53,35 @@ function initCKEditor(elementId, options) {
                 urlField.required = false;
             }
         }
+    });
+    
+    // Đảm bảo gửi CSRF token khi upload (bao gồm chụp từ camera)
+    editor.on('fileUploadRequest', function(evt) {
+        var fileLoader = evt.data.fileLoader;
+        var formData = new FormData();
+        formData.append('upload', fileLoader.file);
+        formData.append('_token', token);
+        fileLoader.xhr.open('POST', uploadUrl.split('?')[0], true);
+        fileLoader.xhr.send(formData);
+        evt.stop();
+    });
+    
+    // Parse response và gán URL để CKEditor chèn ảnh
+    editor.on('fileUploadResponse', function(evt) {
+        var data = evt.data;
+        try {
+            var json = JSON.parse(data.fileLoader.xhr.responseText || '{}');
+            if (json && json.url) {
+                data.url = json.url;
+            } else if (json && json.uploaded && json.fileName && json.url) {
+                data.url = json.url;
+            } else if (json && json.success && json.url) {
+                data.url = json.url;
+            }
+        } catch (e) {
+            console.error('Error parsing upload response:', e);
+        }
+        evt.stop();
     });
     
     return editor;

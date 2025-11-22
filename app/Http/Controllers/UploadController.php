@@ -62,11 +62,11 @@ class UploadController extends Controller
 
             $originalBase = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             $ext = strtolower($file->getClientOriginalExtension());
+            $mimeType = $file->getMimeType();
             
             // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
             // lấy extension từ MIME type
             if (empty($ext)) {
-                $mimeType = $file->getMimeType();
                 $mimeToExt = [
                     'image/jpeg' => 'jpg',
                     'image/jpg' => 'jpg',
@@ -80,12 +80,32 @@ class UploadController extends Controller
             // Loại bỏ ký tự đặc biệt để tránh 403/URL lỗi
             $base = preg_replace('/[^A-Za-z0-9\-_]+/', '_', $originalBase);
             $base = trim($base, '_');
-            if ($base === '') { $base = 'file'; }
+            // Xử lý trường hợp tên file là "blob" hoặc "image" (thường xảy ra khi chụp từ camera)
+            if ($base === '' || $base === 'blob' || $base === 'image') {
+                $base = 'image';
+            }
             $filename = time() . '_' . $base . '.' . $ext;
             $folder = 'uploads/' . date('Ymd');
+            
+            // Đảm bảo thư mục tồn tại
+            if (!Storage::disk('public')->exists($folder)) {
+                Storage::disk('public')->makeDirectory($folder);
+            }
+            
             $path = $file->storeAs($folder, $filename, 'public');
+            
+            if (!$path) {
+                throw new \Exception('Không thể lưu file vào storage');
+            }
 
             $url = Storage::url($path);
+            
+            Log::info('Upload success', [
+                'filename' => $filename,
+                'path' => $path,
+                'url' => $url,
+                'mime' => $mimeType,
+            ]);
 
             // Trả về format tương thích cả CKEditor 4 (filebrowser) và CKEditor 5 (ckfinder)
             // - CKEditor 5 simple upload adapter mong đợi: { uploaded: true, url }
@@ -99,8 +119,18 @@ class UploadController extends Controller
                 'inputName' => $inputName,
             ]);
         } catch (\Throwable $e) {
+            Log::error('Upload error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Trả về format tương thích với CKEditor
             return response()->json([
+                'uploaded' => 0,
                 'success' => false,
+                'error' => [
+                    'message' => 'Không thể tải lên file: ' . $e->getMessage()
+                ],
                 'message' => 'Upload lỗi: ' . $e->getMessage(),
             ], 500);
         }
@@ -115,98 +145,135 @@ class UploadController extends Controller
      */
     public function uploadImage(Request $request): JsonResponse
     {
-        // Debug: Log request để kiểm tra
-        Log::info('CKEditor upload request', [
-            'url' => $request->fullUrl(),
-            'method' => $request->method(),
-            'has_file' => $request->hasFile('upload'),
-            'has_token' => $request->has('_token'),
-            'has_cktoken' => $request->has('ckCsrfToken'),
-            'token_value' => $request->input('_token') ?: $request->input('ckCsrfToken'),
-            'headers' => $request->headers->all(),
-        ]);
-        
-        // Nếu có ckCsrfToken nhưng không có _token, thêm _token từ ckCsrfToken
-        if ($request->has('ckCsrfToken') && !$request->has('_token')) {
-            $request->merge(['_token' => $request->input('ckCsrfToken')]);
-        }
-        
-        // Chấp nhận 1 trong 2 token (_token hoặc ckCsrfToken)
-        if (!$request->has('_token') && !$request->has('ckCsrfToken')) {
-            return response()->json([
-                'uploaded' => 0,
-                'error' => [
-                    'message' => 'CSRF token không hợp lệ!'
-                ]
-            ], 400);
-        }
-
-        if (!$request->hasFile('upload')) {
-            return response()->json([
-                'uploaded' => 0,
-                'error' => [
-                    'message' => 'Không có file nào được tải lên!'
-                ]
-            ], 400);
-        }
-
-        $file = $request->file('upload');
-
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($file->getMimeType(), $allowedTypes)) {
-            return response()->json([
-                'uploaded' => 0,
-                'error' => [
-                    'message' => 'Chỉ chấp nhận file hình ảnh (JPEG, PNG, GIF, WebP)!'
-                ]
-            ], 400);
-        }
-
-        // Giới hạn kích thước 5MB
-        $maxSize = 5 * 1024 * 1024;
-        if ($file->getSize() > $maxSize) {
-            return response()->json([
-                'uploaded' => 0,
-                'error' => [
-                    'message' => 'Kích thước ảnh vượt quá 5MB!'
-                ]
-            ], 413);
-        }
-
-        $originalName = $file->getClientOriginalName();
-        $safeName = preg_replace('/\s+/', '_', $originalName);
-        
-        // Kiểm tra xem file có extension không
-        $ext = strtolower($file->getClientOriginalExtension());
-        if (empty($ext)) {
-            // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
-            // lấy extension từ MIME type
-            $mimeType = $file->getMimeType();
-            $mimeToExt = [
-                'image/jpeg' => 'jpg',
-                'image/jpg' => 'jpg',
-                'image/png' => 'png',
-                'image/gif' => 'gif',
-                'image/webp' => 'webp',
-            ];
-            $ext = $mimeToExt[$mimeType] ?? 'jpg'; // Mặc định là jpg nếu không xác định được
+        try {
+            // Debug: Log request để kiểm tra
+            Log::info('CKEditor upload request', [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'has_file' => $request->hasFile('upload'),
+                'has_token' => $request->has('_token'),
+                'has_cktoken' => $request->has('ckCsrfToken'),
+                'token_value' => $request->input('_token') ?: $request->input('ckCsrfToken'),
+                'headers' => $request->headers->all(),
+            ]);
             
-            // Nếu tên file không có extension, thêm vào
-            if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $safeName)) {
-                $safeName = pathinfo($safeName, PATHINFO_FILENAME) . '.' . $ext;
+            // Nếu có ckCsrfToken nhưng không có _token, thêm _token từ ckCsrfToken
+            if ($request->has('ckCsrfToken') && !$request->has('_token')) {
+                $request->merge(['_token' => $request->input('ckCsrfToken')]);
             }
-        }
-        
-        $filename = time() . '_' . $safeName;
-        $folder = 'uploads/' . date('Ymd');
-        $path = $file->storeAs($folder, $filename, 'public');
-        $url = Storage::url($path);
+            
+            // Chấp nhận 1 trong 2 token (_token hoặc ckCsrfToken)
+            if (!$request->has('_token') && !$request->has('ckCsrfToken')) {
+                return response()->json([
+                    'uploaded' => 0,
+                    'error' => [
+                        'message' => 'CSRF token không hợp lệ!'
+                    ]
+                ], 400);
+            }
 
-        // Trả về format đúng theo chuẩn CKEditor
-        return response()->json([
-            'uploaded' => 1,
-            'fileName' => $filename,
-            'url' => $url,
-        ]);
+            if (!$request->hasFile('upload')) {
+                return response()->json([
+                    'uploaded' => 0,
+                    'error' => [
+                        'message' => 'Không có file nào được tải lên!'
+                    ]
+                ], 400);
+            }
+
+            $file = $request->file('upload');
+
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            $mimeType = $file->getMimeType();
+            if (!in_array($mimeType, $allowedTypes)) {
+                Log::warning('CKEditor upload: Invalid MIME type', ['mime' => $mimeType]);
+                return response()->json([
+                    'uploaded' => 0,
+                    'error' => [
+                        'message' => 'Chỉ chấp nhận file hình ảnh (JPEG, PNG, GIF, WebP)! MIME type: ' . $mimeType
+                    ]
+                ], 400);
+            }
+
+            // Giới hạn kích thước 5MB
+            $maxSize = 5 * 1024 * 1024;
+            $fileSize = $file->getSize();
+            if ($fileSize > $maxSize) {
+                return response()->json([
+                    'uploaded' => 0,
+                    'error' => [
+                        'message' => 'Kích thước ảnh vượt quá 5MB!'
+                    ]
+                ], 413);
+            }
+
+            $originalName = $file->getClientOriginalName();
+            $safeName = preg_replace('/\s+/', '_', $originalName);
+            
+            // Kiểm tra xem file có extension không
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (empty($ext)) {
+                // Nếu không có extension (thường xảy ra khi chụp ảnh từ camera),
+                // lấy extension từ MIME type
+                $mimeToExt = [
+                    'image/jpeg' => 'jpg',
+                    'image/jpg' => 'jpg',
+                    'image/png' => 'png',
+                    'image/gif' => 'gif',
+                    'image/webp' => 'webp',
+                ];
+                $ext = $mimeToExt[$mimeType] ?? 'jpg'; // Mặc định là jpg nếu không xác định được
+                
+                // Nếu tên file không có extension, thêm vào
+                if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $safeName)) {
+                    $baseName = pathinfo($safeName, PATHINFO_FILENAME);
+                    if (empty($baseName) || $baseName === 'blob' || $baseName === 'image') {
+                        $baseName = 'image';
+                    }
+                    $safeName = $baseName . '.' . $ext;
+                }
+            }
+            
+            $filename = time() . '_' . $safeName;
+            $folder = 'uploads/' . date('Ymd');
+            
+            // Đảm bảo thư mục tồn tại
+            if (!Storage::disk('public')->exists($folder)) {
+                Storage::disk('public')->makeDirectory($folder);
+            }
+            
+            $path = $file->storeAs($folder, $filename, 'public');
+            
+            if (!$path) {
+                throw new \Exception('Không thể lưu file vào storage');
+            }
+            
+            $url = Storage::url($path);
+
+            Log::info('CKEditor upload success', [
+                'filename' => $filename,
+                'path' => $path,
+                'url' => $url,
+            ]);
+
+            // Trả về format đúng theo chuẩn CKEditor
+            return response()->json([
+                'uploaded' => 1,
+                'fileName' => $filename,
+                'url' => $url,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('CKEditor upload error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'uploaded' => 0,
+                'error' => [
+                    'message' => 'Không thể tải lên file: ' . $e->getMessage()
+                ]
+            ], 500);
+        }
     }
 }

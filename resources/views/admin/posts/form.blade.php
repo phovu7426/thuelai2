@@ -189,22 +189,33 @@ $(document).ready(function() {
             };
             urlField.required = false;
           }
-          
-          // Xử lý tab Upload - khi chụp ảnh từ camera
-          var uploadTab = dialogDefinition.getContents('Upload');
-          if (uploadTab) {
-            var uploadField = uploadTab.get('upload');
-            if (uploadField) {
-              var originalOnChange = uploadField.onChange;
-              uploadField.onChange = function() {
-                if (originalOnChange) {
-                  originalOnChange.call(this);
-                }
-                
-                var fileInput = this.getInputElement().$;
-                if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                  var file = fileInput.files[0];
-                  console.log('File selected for upload:', file.name, file.type);
+        }
+      });
+      
+      // Lắng nghe khi dialog được mở và attach event listener vào input file
+      editor.on('dialogShow', function(evt) {
+        var dialog = evt.data;
+        var dialogName = dialog.getName();
+        
+        if (dialogName == 'image2' || dialogName == 'image') {
+          // Đợi một chút để dialog render xong
+          setTimeout(function() {
+            // Tìm input file trong dialog
+            var dialogElement = dialog.getElement();
+            var fileInputs = dialogElement.$.querySelectorAll('input[type="file"]');
+            
+            fileInputs.forEach(function(fileInput) {
+              // Remove existing listeners để tránh duplicate
+              var newFileInput = fileInput.cloneNode(true);
+              fileInput.parentNode.replaceChild(newFileInput, fileInput);
+              
+              // Attach event listener mới
+              newFileInput.addEventListener('change', function(e) {
+                var file = e.target.files && e.target.files[0];
+                if (file) {
+                  // Hiển thị thông báo đang upload
+                  var uploadMsg = 'Đang tải lên ảnh: ' + (file.name || 'ảnh từ camera') + '...';
+                  alert(uploadMsg);
                   
                   var formData = new FormData();
                   formData.append('upload', file);
@@ -217,7 +228,6 @@ $(document).ready(function() {
                     if (xhr.status === 200) {
                       try {
                         var response = JSON.parse(xhr.responseText);
-                        console.log('Upload response:', response);
                         if (response.url) {
                           var currentDialog = CKEDITOR.dialog.getCurrent();
                           if (currentDialog) {
@@ -226,34 +236,47 @@ $(document).ready(function() {
                             if (srcField) {
                               srcField.setValue(response.url);
                               currentDialog.selectPage('info');
+                              alert('Tải lên thành công! Ảnh đã được chèn vào editor.');
+                            } else {
+                              alert('Tải lên thành công nhưng không tìm thấy field để chèn ảnh.');
                             }
+                          } else {
+                            alert('Tải lên thành công nhưng không tìm thấy dialog.');
                           }
+                        } else {
+                          alert('Tải lên thành công nhưng không có URL ảnh. Vui lòng thử lại.');
                         }
                       } catch (e) {
-                        console.error('Error parsing response:', e);
-                        alert('Lỗi khi upload ảnh: ' + e.message);
+                        alert('Lỗi khi xử lý phản hồi từ server. Vui lòng thử lại.');
                       }
                     } else {
-                      console.error('Upload failed:', xhr.status, xhr.responseText);
                       try {
                         var errorResponse = JSON.parse(xhr.responseText);
-                        alert('Lỗi khi upload ảnh: ' + (errorResponse.message || errorResponse.error?.message || 'Vui lòng thử lại.'));
+                        var errorMsg = errorResponse.message || errorResponse.error?.message || 'Lỗi không xác định';
+                        alert('Lỗi khi tải lên ảnh: ' + errorMsg);
                       } catch (e) {
-                        alert('Lỗi khi upload ảnh. Vui lòng thử lại.');
+                        alert('Lỗi khi tải lên ảnh (Mã lỗi: ' + xhr.status + '). Vui lòng thử lại.');
                       }
                     }
                   };
                   
                   xhr.onerror = function() {
-                    console.error('Upload error');
-                    alert('Lỗi kết nối khi upload ảnh.');
+                    alert('Lỗi kết nối khi tải lên ảnh. Vui lòng kiểm tra kết nối mạng và thử lại.');
+                  };
+                  
+                  xhr.upload.onprogress = function(e) {
+                    // Có thể hiển thị progress nếu cần
+                    if (e.lengthComputable) {
+                      var percentComplete = (e.loaded / e.total) * 100;
+                      // Progress được xử lý ở đây nếu cần UI
+                    }
                   };
                   
                   xhr.send(formData);
                 }
-              };
-            }
-          }
+              }, false);
+            });
+          }, 300);
         }
       });
 

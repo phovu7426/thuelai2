@@ -35,7 +35,7 @@
                                     <div class="mb-3">
                                         <label for="content" class="form-label">Nội dung <span class="text-danger">*</span></label>
                                         <textarea class="form-control @error('content') is-invalid @enderror" 
-                                                  id="content" name="content" rows="10" required>{{ old('content') }}</textarea>
+                                                  id="content" name="content" rows="10">{{ old('content') }}</textarea>
                                         @error('content')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -139,7 +139,19 @@
 @push('scripts')
 <!-- CKEditor 5 đã được load từ layout -->
 <script>
-    $(function(){
+    $(document).ready(function(){
+      // Đảm bảo jQuery và CKEDITOR đã sẵn sàng
+      if (typeof CKEDITOR === 'undefined' || typeof CKEDITOR.replace === 'undefined') {
+        console.error('CKEDITOR is not loaded');
+        return;
+      }
+      
+      // Xóa required khỏi textarea để tránh lỗi validation khi textarea bị ẩn
+      var contentTextarea = document.getElementById('content');
+      if (contentTextarea) {
+        contentTextarea.removeAttribute('required');
+      }
+      
       var editor = CKEDITOR.replace('content', {
         language: 'vi',
         height: 400,
@@ -156,6 +168,12 @@
         removeDialogTabs: '',
         uploadUrl: '{{ url('/upload') }}',
       });
+      
+      // Đảm bảo editor đã được khởi tạo trước khi gọi .on()
+      if (!editor) {
+        console.error('CKEditor failed to initialize');
+        return;
+      }
       
       // Xử lý khi dialog image được mở
       editor.on('dialogDefinition', function(evt) {
@@ -337,6 +355,38 @@
         }
         evt.stop();
       });
+      
+      // Thêm validation tùy chỉnh khi submit form
+      var form = document.querySelector('form[action="{{ route('admin.posts.store') }}"]');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          // Lấy nội dung từ CKEditor
+          var editorContent = '';
+          if (editor && typeof editor.getData === 'function') {
+            editorContent = editor.getData();
+          } else if (window._ck5Editors && window._ck5Editors['content']) {
+            editorContent = window._ck5Editors['content'].getData();
+          }
+          
+          // Kiểm tra nội dung có rỗng không
+          if (!editorContent || editorContent.trim() === '' || editorContent === '<p></p>') {
+            e.preventDefault();
+            e.stopPropagation();
+            alert('Vui lòng nhập nội dung bài viết!');
+            if (editor && typeof editor.focus === 'function') {
+              editor.focus();
+            } else if (window._ck5Editors && window._ck5Editors['content']) {
+              window._ck5Editors['content'].focus();
+            }
+            return false;
+          }
+          
+          // Cập nhật giá trị textarea với nội dung từ editor
+          if (contentTextarea) {
+            contentTextarea.value = editorContent;
+          }
+        });
+      }
     });
 </script>
 @endpush

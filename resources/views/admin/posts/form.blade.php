@@ -87,7 +87,7 @@
             <label for="content" class="form-label">
                 <i class="bi bi-file-earmark-text"></i> Nội dung <span class="text-danger">*</span>
             </label>
-            <textarea name="content" id="content" class="form-control" rows="8" placeholder="Nhập nội dung bài viết..." required>{{ $content ?? old('content') }}</textarea>
+            <textarea name="content" id="content" class="form-control" rows="8" placeholder="Nhập nội dung bài viết...">{{ $content ?? old('content') }}</textarea>
             <div class="invalid-feedback" id="contentError"></div>
         </div>
     </div>
@@ -162,7 +162,19 @@ $(document).ready(function() {
 </script>
 <script>
     // Khởi tạo qua shim CKEditor 5 (đã load ở layout)
-    $(function(){
+    $(document).ready(function(){
+      // Đảm bảo jQuery và CKEDITOR đã sẵn sàng
+      if (typeof CKEDITOR === 'undefined' || typeof CKEDITOR.replace === 'undefined') {
+        console.error('CKEDITOR is not loaded');
+        return;
+      }
+      
+      // Xóa required khỏi textarea để tránh lỗi validation khi textarea bị ẩn
+      var contentTextarea = document.getElementById('content');
+      if (contentTextarea) {
+        contentTextarea.removeAttribute('required');
+      }
+      
       var editor = CKEDITOR.replace('content', {
         language: 'vi',
         height: 400,
@@ -173,6 +185,12 @@ $(document).ready(function() {
         extraPlugins: 'uploadimage,image2',
         image2_altRequired: false,
       });
+      
+      // Đảm bảo editor đã được khởi tạo trước khi gọi .on()
+      if (!editor) {
+        console.error('CKEditor failed to initialize');
+        return;
+      }
       
       // Xử lý khi dialog image được mở
       editor.on('dialogDefinition', function(evt) {
@@ -354,5 +372,39 @@ $(document).ready(function() {
         }
         evt.stop();
       });
+      
+      // Thêm validation tùy chỉnh khi submit form (nếu form có trong modal)
+      setTimeout(function() {
+        var form = contentTextarea ? contentTextarea.closest('form') : null;
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            // Lấy nội dung từ CKEditor
+            var editorContent = '';
+            if (editor && typeof editor.getData === 'function') {
+              editorContent = editor.getData();
+            } else if (window._ck5Editors && window._ck5Editors['content']) {
+              editorContent = window._ck5Editors['content'].getData();
+            }
+            
+            // Kiểm tra nội dung có rỗng không
+            if (!editorContent || editorContent.trim() === '' || editorContent === '<p></p>') {
+              e.preventDefault();
+              e.stopPropagation();
+              alert('Vui lòng nhập nội dung bài viết!');
+              if (editor && typeof editor.focus === 'function') {
+                editor.focus();
+              } else if (window._ck5Editors && window._ck5Editors['content']) {
+                window._ck5Editors['content'].focus();
+              }
+              return false;
+            }
+            
+            // Cập nhật giá trị textarea với nội dung từ editor
+            if (contentTextarea) {
+              contentTextarea.value = editorContent;
+            }
+          });
+        }
+      }, 500);
     });
 </script>

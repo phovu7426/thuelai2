@@ -57,14 +57,24 @@
 }
 
 .hero-title {
-    font-size: clamp(3rem, 8vw, 4.5rem);
+    font-size: clamp(var(--font-size-3xl), 8vw, var(--font-size-5xl));
     font-weight: 900;
     margin-bottom: 1.5rem;
 }
 
 .hero-description {
-    font-size: 1.25rem;
+    font-size: clamp(var(--font-size-base), 2vw, var(--font-size-xl));
     opacity: 0.95;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: var(--font-size-mobile-3xl);
+    }
+    
+    .hero-description {
+        font-size: var(--font-size-mobile-base);
+    }
 }
 
 .news-grid {

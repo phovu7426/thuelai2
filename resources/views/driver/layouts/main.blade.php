@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('page_title', 'Dịch vụ lái xe thuê') - Phục vụ 24/7</title>
+    <title>@yield('page_title', 'Dịch vụ lái xe thuê')</title>
     
     <!-- Force favicon refresh -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -28,7 +28,7 @@
     <meta name="revisit-after" content="7 days"/>
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="@yield('page_title', 'Dịch vụ lái xe thuê') - Phục vụ 24/7"/>
+    <meta property="og:title" content="@yield('page_title', 'LÁI XE HỘ HÀ NỘI 24/24H')"/>
     <meta property="og:description" content="Dịch vụ lái xe thuê chuyên nghiệp, an toàn và uy tín hàng đầu Việt Nam. Cam kết mang đến trải nghiệm dịch vụ tốt nhất cho khách hàng."/>
     <meta property="og:image" content="{{ asset('images/z6992695110735_2867de0ed574f13edb943a926dfd9159.jpg') }}"/>
     <meta property="og:url" content="{{ url()->current() }}"/>
@@ -45,7 +45,7 @@
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image"/>
-    <meta name="twitter:title" content="@yield('page_title', 'Dịch vụ lái xe thuê') - Phục vụ 24/7"/>
+    <meta name="twitter:title" content="@yield('page_title', 'LÁI XE HỘ HÀ NỘI 24/24H')"/>
     <meta name="twitter:description" content="Dịch vụ lái xe thuê chuyên nghiệp, an toàn và uy tín hàng đầu Việt Nam."/>
     <meta name="twitter:image" content="{{ asset('images/z6992695110735_2867de0ed574f13edb943a926dfd9159.jpg') }}"/>
 
@@ -108,8 +108,7 @@
             <div class="container">
                 <a class="navbar-brand" href="{{ route('driver.home') }}">
                     <div class="brand-logo">
-                        <img src="{{ asset('images/z6992695110735_2867de0ed574f13edb943a926dfd9159.jpg') }}" alt="Logo" class="logo-image">
-                        <span>laixeho.net.vn</span>
+                        <img src="{{ asset('images/LXG.jpg') }}" alt="Lái xe hộ Hà Nội" class="logo-image">
                     </div>
                 </a>
 
@@ -255,8 +254,7 @@
                     <div class="footer-section">
                         <div class="footer-brand">
                             <div class="brand-logo">
-                                <img src="{{ asset('images/z6992695110735_2867de0ed574f13edb943a926dfd9159.jpg') }}" alt="Logo" class="logo-image">
-                                <span>laixeho.net.vn</span>
+                                <img src="{{ asset('images/LXG.jpg') }}" alt="Lái xe hộ Hà Nội" class="logo-image">
                             </div>
                             <p>Dịch vụ lái xe thuê chuyên nghiệp, an toàn và uy tín hàng đầu Việt Nam. Cam kết mang đến
                                 trải nghiệm dịch vụ tốt nhất cho khách hàng.</p>

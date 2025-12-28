@@ -159,15 +159,15 @@
 }
 
 .section-title h2 {
-    font-size: 2.5rem;
+    font-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-4xl));
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--gray-900);
     margin-bottom: 1rem;
 }
 
 .section-title p {
-    font-size: 1.1rem;
-    color: #6c757d;
+    font-size: clamp(var(--font-size-base), 2vw, var(--font-size-lg));
+    color: var(--gray-600);
     max-width: 600px;
     margin: 0 auto;
 }
@@ -181,16 +181,16 @@
 }
 
 .story-content h3 {
-    font-size: 2rem;
+    font-size: clamp(var(--font-size-xl), 3vw, var(--font-size-3xl));
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--gray-900);
     margin-bottom: 1.5rem;
 }
 
 .story-content p {
-    font-size: 1.1rem;
+    font-size: clamp(var(--font-size-base), 2vw, var(--font-size-lg));
     line-height: 1.8;
-    color: #555;
+    color: var(--gray-700);
     margin-bottom: 1.5rem;
 }
 
@@ -515,38 +515,45 @@
 
 @media (max-width: 768px) {
     .hero-section {
-        padding-top: 100px; /* Adjust padding for mobile */
-        min-height: 80vh;
+        padding-top: 80px;
+        min-height: 70vh;
     }
     
     .hero-title {
-        font-size: 2rem;
+        font-size: var(--font-size-mobile-3xl);
     }
     
     .hero-description {
-        font-size: 1rem;
+        font-size: var(--font-size-mobile-base);
     }
     
     .section-title h2 {
-        font-size: 2rem;
+        font-size: var(--font-size-mobile-2xl);
     }
     
     .story-content h3 {
-        font-size: 1.5rem;
+        font-size: var(--font-size-mobile-xl);
+    }
+    
+    .story-content p {
+        font-size: var(--font-size-mobile-base);
     }
     
     .values-grid,
     .team-grid,
     .office-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
     .commitment-items {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
     }
 }
 </style>

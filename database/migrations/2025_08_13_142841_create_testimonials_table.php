@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('customer_name');
             $table->string('customer_title')->nullable();
+            $table->string('customer_email')->nullable();
+            $table->string('customer_phone')->nullable();
             $table->string('title')->nullable();
             $table->text('content')->nullable();
             $table->string('image')->nullable();
@@ -22,10 +24,8 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false);
             $table->boolean('status')->default(true);
             $table->integer('sort_order')->default(0);
-            $table->string('customer_email')->nullable()->after('customer_title');
-            $table->string('customer_phone')->nullable()->after('customer_email');
-            $table->string('review_token')->nullable()->unique()->after('sort_order');
-            $table->timestamp('reviewed_at')->nullable()->after('review_token');
+            $table->string('review_token')->nullable()->unique();
+            $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

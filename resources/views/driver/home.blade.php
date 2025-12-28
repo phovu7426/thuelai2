@@ -1,6 +1,6 @@
 @extends('driver.layouts.main')
 
-@section('page_title', 'Dịch vụ lái xe thuê an toàn')
+@section('page_title', 'LÁI XE HỘ HÀ NỘI 24/24H')
 
 @section('content')
     @if(isset($homeBanner) && $homeBanner && $homeBanner->status && $homeBanner->is_announcement && $homeBanner->image_url && false)
@@ -148,7 +148,7 @@
                         Bảng giá
                     </span>
                 </div>
-                <h2 class="section-title">BẢNG BÁO GIÁ LÁI XE HỖ THEO CHUYẾN</h2>
+                <h2 class="section-title">BẢNG GIÁ LÁI XE HỘ</h2>
                 <p class="section-subtitle">
                     Không phát sinh chi phí, giá cả rõ ràng và cạnh tranh
                 </p>
@@ -706,113 +706,4 @@
             }
         });
     </script>
-    <style>
-        /* ===== Harmonized HERO styling to match announcement banner ===== */
-        .hero-section { position: relative; padding: 8px 0 0 !important; background: linear-gradient(180deg, rgba(42,0,84,0.85) 0%, rgba(42,0,84,0.70) 60%, rgba(42,0,84,0.60) 100%); }
-        /* When using banner as hero background */
-        .hero-section.hero-with-banner .hero-video-bg { display: block; position: absolute; inset: 0; background-size: cover; background-position: center; }
-        .hero-section.hero-with-banner .hero-overlay { background: rgba(0,0,0,0.35); }
-        .hero-title { font-weight: 800; line-height: 1.15; }
-        .hero-description { color: #e9e3ef; font-size: 18px; opacity: .95; margin-bottom: 6px !important; }
-        .hero-stats { margin-bottom: 6px !important; }
-        .hero-actions { margin-top: 8px !important; }
-        .btn-primary-glow { background: linear-gradient(90deg,#6a11cb,#2575fc); border: none; box-shadow: 0 10px 24px rgba(37,117,252,.35); }
-        .btn-secondary { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); color: #fff; }
-        .hero-actions { display: flex !important; flex-direction: row !important; flex-wrap: nowrap; gap: 12px; align-items: center; justify-content: center; margin-top: 12px !important; }
-        .hero-actions a { flex: 1 1 0 !important; margin: 0 !important; white-space: nowrap; min-width: 0; }
-        /* Force hero stats to be horizontal at all sizes */
-        .hero-section .hero-content .hero-stats { display: flex !important; flex-direction: row !important; flex-wrap: nowrap; align-items: flex-start; justify-content: center; gap: 24px; }
-        .hero-section .hero-content .hero-stats .stat-item { flex: 1 1 0; text-align: center; }
-        .hero-stats .stat-number { color: #fff; }
-        .hero-stats .stat-label { color: rgba(255,255,255,.85); }
-
-        
-
-        /* Announcement bar */
-        .announcement-bar { position: relative; z-index: 3; overflow: hidden; height: 200px; }
-        .announcement-bg { position: absolute; inset: 0; background-size: contain; background-repeat: no-repeat; background-position: center; }
-        .announcement-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.10)); }
-        .announcement-inner { position: relative; display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0; color: #fff; }
-        .announcement-text { font-size: 15px; font-weight: 500; }
-        .announcement-text .sep { opacity: 0.6; margin: 0 8px; }
-        .announcement-btn { color: #fff; background: linear-gradient(90deg,#6a11cb,#2575fc); padding: 8px 14px; border-radius: 999px; font-weight: 700; letter-spacing: .2px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 6px 18px rgba(37,117,252,.35); }
-        .announcement-btn:hover { opacity: 0.95; }
-        .announcement-inner strong, .announcement-inner span { text-shadow: 0 2px 8px rgba(0,0,0,.35); }
-
-        /* Home Banner (scoped) */
-        .home-banner-full { position: relative; padding: 140px 0; min-height: 420px; overflow: hidden; margin: 0 0 24px; z-index: 1; }
-        .home-banner-full .home-banner-bg {
-            position: absolute; inset: 0; background-size: cover; background-position: center;
-            transform: scale(1.02);
-        }
-        .home-banner-full .home-banner-layer {
-            position: absolute; inset: 0;
-            background: linear-gradient(180deg, rgba(21, 0, 41, 0.55) 0%, rgba(21, 0, 41, 0.7) 100%);
-            backdrop-filter: blur(0.5px);
-        }
-        .home-banner-inner { position: relative; z-index: 2; text-align: center; color: #fff; }
-        .home-banner-title { font-size: 44px; font-weight: 800; margin-bottom: 12px; letter-spacing: 0.2px; }
-        .home-banner-subtitle { font-size: 20px; opacity: 0.95; margin-bottom: 22px; }
-        .home-banner-btn { display: inline-flex; align-items: center; gap: 8px; }
-
-        /* Driver highlights scroller */
-        .driver-highlights { padding: 12px 0 24px; }
-        .features-scroller { display: flex; gap: 20px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 8px 4px; justify-content: center; scroll-padding-left: 0; scroll-padding-right: 0; touch-action: pan-x; }
-        .features-scroller::-webkit-scrollbar { height: 8px; }
-        .features-scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 8px; }
-        .feature-card { min-width: 300px; flex: 0 0 auto; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; padding: 32px !important; color: #1d1d1f; text-align: center; scroll-snap-align: center; backdrop-filter: blur(6px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-        .feature-icon { width: 68px !important; height: 68px !important; font-size: 32px !important; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; background: rgba(118,75,162,0.10); color: #764ba2 !important; box-shadow: inset 0 0 0 1px rgba(118,75,162,0.21); }
-        .feature-title { font-weight: 800; margin-bottom: 6px; letter-spacing: .2px; color: #111827; font-size: 1.35rem !important; }
-        .feature-desc { opacity: .8; font-size: 1.06rem !important; color: #374151; }
-
-        /* Mobile tweaks for scroller: allow full scroll to first/last */
-        @media (max-width: 576px) {
-            .features-scroller { justify-content: flex-start; padding: 8px 16px; gap: 16px; scroll-padding-left: 16px; scroll-padding-right: 16px; }
-            .feature-card { min-width: 95%; }
-        }
-
-        /* Responsive */
-        @media (min-width: 1200px) {
-            .home-banner-full { padding: 200px 0; min-height: 520px; }
-        }
-        @media (max-width: 992px) {
-            .hero-section { padding: 28px 0 16px; }
-            .announcement-bar { height: 160px; }
-            .home-banner-full { padding: 80px 0; }
-            .home-banner-title { font-size: 28px; }
-            .home-banner-subtitle { font-size: 16px; }
-            /* Hero stats: keep horizontal layout on tablet */
-            .hero-section .hero-content .hero-stats { display: flex !important; gap: 16px; justify-content: space-between; }
-            .hero-section .hero-content .hero-stats .stat-item { flex: 1 1 0; text-align: center; }
-            /* Keep hero buttons in one row */
-            .hero-actions { justify-content: space-between; }
-            .hero-actions a { flex: 1 1 0 !important; display: inline-flex; align-items: center; justify-content: center; }
-        }
-        @media (max-width: 576px) {
-            .hero-section { padding: 10px 0 4px !important; }
-            .announcement-bar { height: 120px; }
-            .home-banner-full { padding: 96px 0; }
-            .home-banner-title { font-size: 28px; }
-            .home-banner-subtitle { font-size: 16px; }
-            /* Mobile: avoid banner stretching in Hero */
-            .hero-section.hero-with-banner { background: #2a0054; }
-            .hero-section.hero-with-banner .hero-video-bg {
-                background-size: contain; /* keep original ratio */
-                background-repeat: no-repeat;
-                background-position: center top;
-            }
-            .hero-section.hero-with-banner .hero-overlay {
-                background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(42,0,84,0.8) 60%, rgba(42,0,84,1) 100%);
-            }
-            /* Hero stats: display horizontally on mobile */
-            .hero-section .hero-content .hero-stats { display: flex !important; gap: 12px; justify-content: space-between; }
-            .hero-section .hero-content .hero-stats .stat-item { flex: 1 1 0; text-align: center; }
-            .hero-section .hero-content .hero-stats .stat-number { font-size: 28px; }
-            .hero-section .hero-content .hero-stats .stat-label { font-size: 12px; }
-            /* Hero buttons side-by-side on mobile */
-            .hero-actions { gap: 10px; }
-            .hero-actions a { flex: 1 1 0 !important; display: inline-flex; align-items: center; justify-content: center; }
-            
-        }
-    </style>
 @endsection

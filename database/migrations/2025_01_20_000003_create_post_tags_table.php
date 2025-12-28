@@ -14,12 +14,12 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->string('color')->default('#6c757d');
+            $table->string('icon')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->string('icon')->nullable()->after('color');
-            $table->boolean('is_featured')->default(false)->after('is_active');
-            $table->string('meta_title')->nullable()->after('is_featured');
-            $table->text('meta_description')->nullable()->after('meta_title');
-            $table->text('meta_keywords')->nullable()->after('meta_description');
+            $table->boolean('is_featured')->default(false);
+            $table->string('meta_title')->nullable();
+            $table->text('meta_description')->nullable();
+            $table->text('meta_keywords')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

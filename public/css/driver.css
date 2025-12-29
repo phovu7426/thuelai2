@@ -2455,7 +2455,7 @@ section:first-of-type {
 }
 
 .brand-logo .logo-image {
-    height: 60px;
+    height: 65px;
     width: auto;
     max-width: 280px;
     object-fit: contain;
@@ -2801,7 +2801,7 @@ section:first-of-type {
 @media (max-width: 768px) {
     /* Header Responsive - Logo adjustments */
     .brand-logo .logo-image {
-        height: 55px;
+        height: 65px;
         max-width: 240px;
     }
     

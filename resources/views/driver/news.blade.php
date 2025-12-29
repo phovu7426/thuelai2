@@ -22,6 +22,18 @@
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-family-heading: "Poppins", sans-serif;
+}
+
+/* Base Typography */
+.news-grid {
+    font-family: var(--font-family);
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #334155;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .hero-section {
@@ -57,14 +69,20 @@
 }
 
 .hero-title {
-    font-size: clamp(var(--font-size-3xl), 8vw, var(--font-size-5xl));
-    font-weight: 900;
+    font-family: var(--font-family-heading);
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.2;
     margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
 }
 
 .hero-description {
-    font-size: clamp(var(--font-size-base), 2vw, var(--font-size-xl));
+    font-family: var(--font-family);
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.6;
     opacity: 0.95;
+    font-weight: 400;
 }
 
 @media (max-width: 768px) {
@@ -74,6 +92,14 @@
     
     .hero-description {
         font-size: var(--font-size-mobile-base);
+    }
+    
+    .news-image {
+        padding-bottom: 60%;
+    }
+    
+    .news-card {
+        margin-bottom: 1.5rem;
     }
 }
 
@@ -85,19 +111,28 @@
 .news-filters {
     margin-bottom: 40px;
     text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
 }
 
 .filter-btn {
+    font-family: var(--font-family);
     background: white;
     border: 2px solid #e2e8f0;
     color: #64748b;
     padding: 10px 20px;
-    margin: 5px;
     border-radius: 30px;
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.5;
     text-decoration: none;
+    display: inline-block;
+    white-space: nowrap;
 }
 
 .filter-btn:hover, .filter-btn.active {
@@ -125,18 +160,33 @@
 }
 
 .news-image {
-    height: 220px;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
     overflow: hidden;
     position: relative;
+    background: #f1f5f9;
+    border-radius: 20px 20px 0 0;
 }
 
 .news-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s ease;
+    display: block;
+}
+
+.news-card:hover .news-image img {
+    transform: scale(1.08);
 }
 
 .news-category {
+    font-family: var(--font-family);
     position: absolute;
     top: 15px;
     left: 15px;
@@ -144,8 +194,9 @@
     color: white;
     padding: 6px 16px;
     border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
     text-decoration: none;
 }
 
@@ -157,31 +208,44 @@
 }
 
 .news-date {
+    font-family: var(--font-family);
     color: #64748b;
-    font-size: 0.9rem;
-    margin-bottom: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 12px;
 }
 
 .news-title {
+    font-family: var(--font-family-heading);
     font-size: 1.25rem;
-    font-weight: 800;
-    margin-bottom: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 12px;
     flex-grow: 1;
 }
 
 .news-title a {
     color: var(--dark-color);
     text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.news-title a:hover {
+    color: var(--primary-color);
 }
 
 .news-excerpt {
+    font-family: var(--font-family);
     color: #64748b;
-    margin-bottom: 20px;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    margin-bottom: 16px;
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    font-weight: 400;
 }
 
 .news-meta {
+    font-family: var(--font-family);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -190,10 +254,25 @@
     margin-top: auto;
 }
 
+.news-views {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
 .read-more {
+    font-family: var(--font-family);
     color: var(--primary-color);
     text-decoration: none;
-    font-weight: 700;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+}
+
+.read-more:hover {
+    color: var(--secondary-color);
 }
 
 .news-sidebar {
@@ -206,9 +285,12 @@
 }
 
 .sidebar-title {
-    font-size: 1.4rem;
-    font-weight: 800;
-    margin-bottom: 25px;
+    font-family: var(--font-family-heading);
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 20px;
+    color: var(--dark-color);
 }
 
 .popular-news-item {
@@ -220,23 +302,46 @@
 .popular-news-image {
     width: 70px;
     height: 70px;
+    min-width: 70px;
     border-radius: 15px;
     overflow: hidden;
     margin-right: 15px;
     flex-shrink: 0;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .popular-news-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease;
+    display: block;
+}
+
+.popular-news-item:hover .popular-news-image img {
+    transform: scale(1.1);
+}
+
+.popular-news-content h5 {
+    font-family: var(--font-family-heading);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 6px;
 }
 
 .popular-news-content h5 a {
     color: var(--dark-color);
     text-decoration: none;
-    font-weight: 700;
-    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.popular-news-content h5 a:hover {
+    color: var(--primary-color);
 }
 
 .categories-list {
@@ -245,15 +350,18 @@
 }
 
 .categories-list a {
+    font-family: var(--font-family);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
+    padding: 14px 16px;
     background: #f8fafc;
     border-radius: 12px;
     color: #64748b;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    line-height: 1.5;
     margin-bottom: 10px;
     transition: all 0.3s ease;
 }
@@ -264,10 +372,13 @@
 }
 
 .categories-list .count {
+    font-family: var(--font-family);
     background: #e2e8f0;
     padding: 4px 10px;
     border-radius: 15px;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
     transition: all 0.3s ease;
 }
 
@@ -277,6 +388,7 @@
 }
 
 .quick-contact {
+    font-family: var(--font-family);
     background: var(--gradient-primary);
     padding: 25px;
     border-radius: 15px;
@@ -285,12 +397,40 @@
     margin-top: 30px;
 }
 
+.quick-contact .sidebar-title {
+    color: white;
+}
+
+.quick-contact .btn {
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
 .empty-state {
+    font-family: var(--font-family);
     text-align: center;
     padding: 60px 20px;
     background: white;
     border-radius: 20px;
     box-shadow: var(--shadow-md);
+}
+
+.empty-state h4 {
+    font-family: var(--font-family-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    color: var(--dark-color);
+}
+
+.empty-state p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #64748b;
+    font-weight: 400;
 }
 </style>
 @endpush
@@ -384,7 +524,7 @@
                             </div>
                         </div>
                         @empty
-                        <p>Không có bài viết phổ biến.</p>
+                        <p style="font-family: var(--font-family); font-size: 0.9375rem; color: #64748b; line-height: 1.6;">Không có bài viết phổ biến.</p>
                         @endforelse
                     </div>
 
